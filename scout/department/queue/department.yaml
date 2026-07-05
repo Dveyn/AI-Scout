@@ -1,0 +1,19 @@
+# Department agent queue priorities
+defaults:
+  smm_posts_per_day: 2
+  seo_articles_per_week: 3
+  ads_creatives_per_week: 5
+
+priorities:
+  - agent: sales
+    weight: 10
+  - agent: analytics
+    weight: 9
+  - agent: cmo
+    weight: 8
+  - agent: smm
+    weight: 7
+  - agent: seo
+    weight: 6
+  - agent: ads
+    weight: 5

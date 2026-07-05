@@ -1,0 +1,24 @@
+# Cursor Automation draft — Content QA
+# Trigger: git push to scout/data/content/**
+name: "Content QA"
+description: "Review SMM/SEO content before publication"
+workflow:
+  triggers:
+    - git:
+        push:
+          branch: "main"
+  actions: []
+  prompts:
+    - |
+      Review changed files in scout/data/content/ using copy-editing skill.
+
+      Check against guardrails in .agents/product-marketing.md:
+      - No banned phrases (лидер рынка, революционный, etc.)
+      - B2B tone for ВебШтрих
+      - Concrete value, no fake case studies
+
+      Comment on PR with pass/fail and specific edits.
+  model: ""
+  agentOptions:
+    skipInstall: false
+  memoryEnabled: true

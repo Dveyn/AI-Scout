@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Журнал · Маркетинг{% endblock %}
+{% block nav_dept %}is-active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Журнал действий</h1>
+  <p class="muted">Что делали агенты и сколько стоило в GPTunnel. Удобно для контроля расходов.</p>
+</div>
+
+{% include "department/_nav.html" %}
+
+<form method="get" class="filter-bar">
+  <label for="agent-filter">Агент</label>
+  <select id="agent-filter" name="agent" class="select" onchange="this.form.submit()">
+    <option value="">Все агенты</option>
+    {% for a in agents %}
+    <option value="{{ a }}" {% if filter_agent == a %}selected{% endif %}>{{ label_agent(a) }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<section class="card">
+  {% if logs %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Когда</th>
+          <th>Агент</th>
+          <th>Действие</th>
+          <th>Результат</th>
+          <th>₽</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="muted">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
+          <td>{{ label_agent(log.agent.value) }}</td>
+          <td>{{ label_action(log.action) }}</td>
+          <td class="muted">{{ log.output_preview[:120] }}{% if log.output_preview|length > 120 %}…{% endif %}</td>
+          <td>{{ "%.2f"|format(log.cost_rub) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">Записей пока нет.</p>
+  {% endif %}
+</section>
+{% endblock %}

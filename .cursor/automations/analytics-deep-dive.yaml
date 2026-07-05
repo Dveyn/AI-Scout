@@ -1,0 +1,23 @@
+# Cursor Automation draft — Analytics Deep Dive
+# Trigger: cron Friday 18:00 | Repo required
+name: "Analytics Deep Dive"
+description: "Weekly CPL/CAC/ROMI analysis for marketing department"
+workflow:
+  triggers:
+    - cron:
+        cron: "0 18 * * 5"
+  actions: []
+  prompts:
+    - |
+      Read all scout/data/cursor/reports/*.md from the past 7 days.
+
+      Use analytics and marketing-plan skills.
+
+      Write scout/data/cursor/reports/weekly-analytics.md with:
+      - Week-over-week KPI trends
+      - CPL, CAC, ROMI analysis
+      - Top 5 optimization recommendations for CMO
+  model: ""
+  agentOptions:
+    skipInstall: false
+  memoryEnabled: true

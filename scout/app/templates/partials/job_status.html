@@ -1,0 +1,241 @@
+{% set running = job.status.value in ['collecting', 'scouting', 'pending'] %}
+
+<div class="summary">
+  <div class="summary__title">
+    {{ job.query }} · {{ job.city }}
+    <small>Кампания {{ job.id[:8] }} · {{ job.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+  </div>
+  <span class="pill pill--{{ job.status.value }}">{{ job.status.value }}</span>
+  {% if job.llm_cost_rub %}<span class="muted">LLM: {{ "%.2f"|format(job.llm_cost_rub) }} ₽</span>{% endif %}
+</div>
+
+{% if job.error %}
+<div class="banner-error">{{ job.error }}</div>
+{% endif %}
+
+{% if running %}
+<div class="progress">
+  <div class="progress__head">
+    <div class="progress__stage">
+      <span class="progress__dot"></span>
+      {% if job.status.value == 'collecting' %}Собираем компании с Яндекс.Карт…
+      {% elif job.status.value == 'scouting' %}Анализируем сайты и пишем сообщения…
+      {% else %}Запускаем…{% endif %}
+    </div>
+    <span class="progress__count">{{ job.progress_current }} / {{ job.progress_total }}</span>
+  </div>
+  <div class="progress__bar">
+    <div class="progress__fill" style="width: {{ ((job.progress_current / job.progress_total * 100) if job.progress_total else 5)|round }}%"></div>
+  </div>
+  <div class="progress__hint">Страница обновляется автоматически. Можно закрыть и вернуться к кампании из дашборда.</div>
+</div>
+{% endif %}
+
+{% if leads %}
+{% if report %}
+<div class="metric-row">
+  <div class="metric"><div class="metric__value">{{ report.collected }}</div><div class="metric__label">Собрано</div></div>
+  <div class="metric metric--accent"><div class="metric__value">{{ report.targets }}</div><div class="metric__label">Target</div></div>
+  <div class="metric"><div class="metric__value">{{ report.email_found }}</div><div class="metric__label">Email найден</div></div>
+  <div class="metric metric--success"><div class="metric__value">{{ report.sent }}</div><div class="metric__label">Отправлено</div></div>
+  <div class="metric metric--warn"><div class="metric__value">{{ report.ready_manual }}</div><div class="metric__label">К ручной</div></div>
+  <div class="metric"><div class="metric__value">{{ report.no_contact }}</div><div class="metric__label">Без контакта</div></div>
+</div>
+{% endif %}
+
+{% if job.status.value == 'done' %}
+<div class="btn-row" style="margin-bottom:1.1rem">
+  <button class="btn btn--success" onclick="sendAll('{{ job.id }}', 1)">Отправить касание 1</button>
+  <button class="btn btn--ghost" onclick="sendAll('{{ job.id }}', 2)">Касание 2 (follow-up)</button>
+  <button class="btn btn--ghost" onclick="sendAll('{{ job.id }}', 3)">Касание 3 (breakup)</button>
+  <a class="btn btn--ghost" href="/api/jobs/{{ job.id }}/export.csv">Скачать CSV</a>
+  <a class="btn btn--ghost" href="/">Новая кампания</a>
+</div>
+{% endif %}
+
+{# ---- compute filter counts ---- #}
+{% set ns = namespace(target=0, ready=0, sent=0, nocontact=0) %}
+{% for lead in leads %}
+  {% set r = lead.result %}
+  {% set email = lead.email or lead.raw.email %}
+  {% set c = lead.contacts %}
+  {% set has_channel = (email or lead.raw.phone or (c and (c.telegram or c.vk or c.max_links or c.whatsapp or c.phones))) %}
+  {% set sent = lead.send_status and lead.send_status.value == 'sent' %}
+  {% if r and r.is_target %}
+    {% set ns.target = ns.target + 1 %}
+    {% if sent %}{% set ns.sent = ns.sent + 1 %}
+    {% elif has_channel %}{% set ns.ready = ns.ready + 1 %}
+    {% else %}{% set ns.nocontact = ns.nocontact + 1 %}{% endif %}
+  {% endif %}
+{% endfor %}
+
+<div class="filters">
+  <button class="filter is-active" onclick="filterLeads('all', this)">Все <span class="filter__count">{{ leads|length }}</span></button>
+  <button class="filter" onclick="filterLeads('target', this)">Target <span class="filter__count">{{ ns.target }}</span></button>
+  <button class="filter" onclick="filterLeads('ready', this)">К отправке <span class="filter__count">{{ ns.ready }}</span></button>
+  <button class="filter" onclick="filterLeads('sent', this)">Отправлено <span class="filter__count">{{ ns.sent }}</span></button>
+  <button class="filter" onclick="filterLeads('nocontact', this)">Без контакта <span class="filter__count">{{ ns.nocontact }}</span></button>
+</div>
+
+<div class="leads">
+  {% for lead in leads %}
+  {% set r = lead.result %}
+  {% set is_target = r and r.is_target %}
+  {% set email = lead.email or lead.raw.email %}
+  {% set c = lead.contacts %}
+  {% set has_channel = (email or lead.raw.phone or (c and (c.telegram or c.vk or c.max_links or c.whatsapp or c.phones))) %}
+  {% set status = lead.send_status.value if lead.send_status else 'new' %}
+  {% set fit = r.fit_score if r else 0 %}
+  <article class="lead {% if not is_target %}lead--muted{% endif %}"
+           data-target="{{ '1' if is_target else '0' }}"
+           data-contact="{{ '1' if has_channel else '0' }}"
+           data-status="{{ status }}">
+    <div class="lead__top">
+      <div class="lead__main">
+        <div class="lead__name">
+          {{ lead.raw.name }}
+          {% if r %}
+          <span class="score-badge score-badge--{{ 'high' if fit >= 70 else 'mid' if fit >= 50 else 'low' }}">{{ fit }}</span>
+          {% endif %}
+          {% if is_target %}<span class="tag tag--target">target</span>{% endif %}
+        </div>
+        <div class="lead__cat">{{ lead.raw.category or '' }}{% if lead.raw.address %} · {{ lead.raw.address }}{% endif %}</div>
+      </div>
+      <div>
+        {% if lead.send_status %}
+        <span class="pill pill--{{ status }}">{{ status }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="lead__body">
+      <div class="lead__contacts">
+        {% if c and c.lpr_name %}
+        <div class="contact-line"><span class="contact-line__k">ЛПР</span><span class="contact-line__v"><strong>{{ c.lpr_name }}</strong>{% if c.lpr_role %} <small class="muted">({{ c.lpr_role }})</small>{% endif %}</span></div>
+        {% endif %}
+        {% if email %}
+        <div class="contact-line"><span class="contact-line__k">Email</span><span class="contact-line__v">{{ email }}</span></div>
+        {% endif %}
+        {% if lead.raw.phone %}
+        <div class="contact-line"><span class="contact-line__k">Тел</span><span class="contact-line__v">{{ lead.raw.phone }}</span></div>
+        {% endif %}
+        {% if c and c.telegram %}
+        <div class="contact-line"><span class="contact-line__k">TG</span><span class="contact-line__v">{% for tg in c.telegram[:2] %}@{{ tg.lstrip('@') }}{% if not loop.last %}, {% endif %}{% endfor %}</span></div>
+        {% endif %}
+        {% if c and c.vk %}
+        <div class="contact-line"><span class="contact-line__k">VK</span><span class="contact-line__v"><a href="{{ c.vk[0] }}" target="_blank">{{ c.vk[0].split('/')[-1] }}</a></span></div>
+        {% endif %}
+        {% if c and c.max_links %}
+        <div class="contact-line"><span class="contact-line__k">Max</span><span class="contact-line__v"><a href="{{ c.max_links[0] }}" target="_blank">профиль</a></span></div>
+        {% endif %}
+        {% if lead.raw.website %}
+        <div class="contact-line"><span class="contact-line__k">Сайт</span><span class="contact-line__v"><a href="{{ lead.raw.website }}" target="_blank">{{ lead.raw.website|replace('https://','')|replace('http://','') }}</a></span></div>
+        {% endif %}
+
+        {% if lead.website_audit %}
+        <div class="audit">
+          <div class="audit__head">
+            <span class="score-badge score-badge--{{ 'high' if lead.website_audit.quality_score >= 70 else 'mid' if lead.website_audit.quality_score >= 50 else 'low' }}">{{ lead.website_audit.quality_score }}/100</span>
+            <span class="muted">сайт{% if lead.website_audit.seo_audit %} · SEO{% endif %}</span>
+          </div>
+          {% if lead.website_audit.issues %}
+          <ul class="audit__issues">
+            {% for issue in lead.website_audit.issues[:3] %}<li>{{ issue }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% elif not lead.raw.website %}
+        <div class="audit"><span class="muted">Нет сайта</span></div>
+        {% endif %}
+      </div>
+
+      <div class="lead__work">
+        {% if is_target and r.message %}
+        <div class="touch-tabs" data-lead="{{ lead.id }}">
+          <button type="button" class="touch-tab is-active" data-touch="1" onclick="switchTouch('{{ lead.id }}', 1)">1</button>
+          {% for fu in lead.followups %}
+          <button type="button" class="touch-tab" data-touch="{{ fu.touch }}" onclick="switchTouch('{{ lead.id }}', {{ fu.touch }})">{{ fu.touch }}{% if fu.send_status and fu.send_status.value == 'sent' %} ✓{% endif %}</button>
+          {% endfor %}
+        </div>
+
+        <div class="touch-panel" id="touch-{{ lead.id }}-1">
+          <input type="text" id="subj-{{ lead.id }}-1" class="msg__subject" value="{{ r.subject or '' }}" placeholder="Тема письма">
+          <textarea id="msg-{{ lead.id }}-1" class="msg__text">{{ r.message }}</textarea>
+        </div>
+        {% for fu in lead.followups %}
+        <div class="touch-panel" id="touch-{{ lead.id }}-{{ fu.touch }}" style="display:none">
+          <input type="text" id="subj-{{ lead.id }}-{{ fu.touch }}" class="msg__subject" value="{{ fu.subject or '' }}" placeholder="Тема">
+          <small class="muted">{{ fu.angle }}</small>
+          <textarea id="msg-{{ lead.id }}-{{ fu.touch }}" class="msg__text">{{ fu.message }}</textarea>
+        </div>
+        {% endfor %}
+
+        <div class="msg__meta">
+          <span class="msg__hint">Касание <span id="touch-label-{{ lead.id }}">1</span> — можно отредактировать</span>
+          <span class="msg__saved" id="saved-{{ lead.id }}">сохранено ✓</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn--ghost btn--sm" onclick="saveMessage('{{ lead.id }}')">Сохранить</button>
+          <button class="btn btn--ghost btn--sm" onclick="copyActiveMessage('{{ lead.id }}')">Копировать</button>
+        </div>
+
+        <div class="channels">
+          {% if email %}
+          <button class="btn btn--ghost btn--sm" onclick="sendEmail('{{ lead.id }}')">Email (текущее касание)</button>
+          {% endif %}
+          {% if c %}
+            {% for tg in c.telegram[:2] %}
+            <button class="ch ch--telegram" data-lead="{{ lead.id }}" data-open="https://t.me/{{ tg.lstrip('@') }}" onclick="openChannel(this)"><span class="ch__dot"></span>Telegram</button>
+            {% endfor %}
+            {% for vk in c.vk[:1] %}
+            <button class="ch ch--vk" data-lead="{{ lead.id }}" data-open="{{ vk }}" onclick="openChannel(this)"><span class="ch__dot"></span>VK</button>
+            {% endfor %}
+            {% for mx in c.max_links[:1] %}
+            <button class="ch ch--max" data-lead="{{ lead.id }}" data-open="{{ mx }}" onclick="openChannel(this)"><span class="ch__dot"></span>Max</button>
+            {% endfor %}
+            {% for wa in c.whatsapp[:1] %}
+            <button class="ch ch--whatsapp" data-lead="{{ lead.id }}" data-open="{{ wa }}" onclick="openChannel(this)"><span class="ch__dot"></span>WhatsApp</button>
+            {% endfor %}
+            {% if not c.whatsapp and lead.raw.phone %}
+            <button class="ch ch--whatsapp" data-lead="{{ lead.id }}" data-open="https://wa.me/{{ lead.raw.phone|replace('+','')|replace(' ','')|replace('-','')|replace('(','')|replace(')','') }}" onclick="openChannel(this)"><span class="ch__dot"></span>WhatsApp</button>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="send-row" id="mark-{{ lead.id }}" style="{% if status == 'sent' %}display:flex{% else %}display:none{% endif %}">
+          <button class="btn btn--success btn--sm" onclick="markSent('{{ lead.id }}', '{{ r.channel_hint }}')">✓ Отметить отправленным</button>
+        </div>
+        {% elif is_target %}
+        <p class="no-target">Подходит под ICP (fit {{ fit }}), но сообщение не сгенерировано. {{ r.reason }}</p>
+        {% elif r %}
+        <p class="no-target">Не подходит: {{ r.reason }}</p>
+        {% else %}
+        <p class="no-target">Обрабатывается…</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if lead.trace %}
+    <div class="trace">
+      <details>
+        <summary>Как думал агент</summary>
+        {% for step in lead.trace %}
+        <div class="trace__step">
+          <small>R{{ step.round }} · {{ step.type }}</small>
+          {% if step.tool_name %} · <code>{{ step.tool_name }}</code>{% endif %}
+          {% if step.content %}<div>{{ step.content }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        {% if r and r.reasoning_summary %}<div class="trace__step"><em>{{ r.reasoning_summary }}</em></div>{% endif %}
+      </details>
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% elif not running %}
+<div class="empty">
+  <div class="empty__icon">∅</div>
+  <p>Лиды не найдены.</p>
+</div>
+{% endif %}

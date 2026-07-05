@@ -1,0 +1,23 @@
+# Cursor Automation draft — Competitor Scan
+# Trigger: cron 1st of month 10:00 | No repo required
+name: "Competitor Scan"
+description: "Monthly competitor analysis for B2B web studio"
+workflow:
+  triggers:
+    - cron:
+        cron: "0 10 1 * *"
+  actions: []
+  prompts:
+    - |
+      Run competitor analysis for ВебШтрих (webstroke.ru) — B2B web studio in Rostov, Russia.
+
+      Use competitors and competitor-profiling skills.
+
+      Write report to .agents/competitor-report.md with:
+      - Top 5 regional competitors
+      - Positioning gaps
+      - Recommended angles for outreach and content
+  model: ""
+  agentOptions:
+    skipInstall: false
+  memoryEnabled: true

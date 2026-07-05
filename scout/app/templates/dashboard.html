@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Дашборд · {{ company_brand }} Scout{% endblock %}
+{% block nav_dash %}is-active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Дашборд</h1>
+  <p>Что, кому и куда отправлено — за всё время.</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat__value">{{ stats.total_jobs }}</div><div class="stat__label">Кампаний</div></div>
+  <div class="stat"><div class="stat__value">{{ stats.total_leads }}</div><div class="stat__label">Лидов</div></div>
+  <div class="stat stat--accent"><div class="stat__value">{{ stats.total_targets }}</div><div class="stat__label">Target</div></div>
+  <div class="stat"><div class="stat__value">{{ stats.emails_found }}</div><div class="stat__label">Email найден</div></div>
+  <div class="stat stat--success"><div class="stat__value">{{ stats.emails_sent }}</div><div class="stat__label">Отправлено</div></div>
+  <div class="stat"><div class="stat__value">{{ stats.no_email }}</div><div class="stat__label">Без контакта</div></div>
+  <div class="stat"><div class="stat__value">{{ "%.0f"|format(stats.total_llm_cost_rub) }} ₽</div><div class="stat__label">LLM расход</div></div>
+</div>
+
+<section class="card">
+  <h2 class="card__title">Кампании</h2>
+  {% if jobs %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Дата</th><th>Запрос</th><th>Город</th><th>Статус</th><th>Прогресс</th><th>LLM</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr>
+          <td><span class="muted">{{ j.created_at.strftime('%d.%m %H:%M') }}</span></td>
+          <td><strong>{{ j.query }}</strong></td>
+          <td>{{ j.city }}</td>
+          <td><span class="pill pill--{{ j.status.value }}">{{ j.status.value }}</span></td>
+          <td><span class="muted">{{ j.progress_current }}/{{ j.progress_total }}</span></td>
+          <td><span class="muted">{{ "%.2f"|format(j.llm_cost_rub) }} ₽</span></td>
+          <td><a href="/jobs/{{ j.id }}">Открыть →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty"><div class="empty__icon">◷</div><p>Кампаний пока нет. <a href="/">Запустить первую →</a></p></div>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2 class="card__title">История отправок</h2>
+  {% if outreach %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Когда</th><th>#</th><th>Компания</th><th>Канал</th><th>Куда</th><th>Тема</th><th>Статус</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for row in outreach %}
+        <tr>
+          <td><span class="muted">{{ row.sent_at.strftime('%d.%m %H:%M') }}</span></td>
+          <td>{{ row.touch_number }}</td>
+          <td><strong>{{ row.company_name }}</strong></td>
+          <td><span class="pill pill--{{ row.status.value }}">{{ row.channel }}</span></td>
+          <td>{% if row.email %}{{ row.email }}{% elif row.phone %}{{ row.phone }}{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>{{ row.subject or '—' }}</td>
+          <td>
+            <span class="pill pill--{{ row.status.value }}">{{ row.status.value }}</span>
+            {% if row.error %}<br><small class="muted">{{ row.error }}</small>{% endif %}
+          </td>
+          <td><a href="/jobs/{{ row.job_id }}">{{ row.job_id[:8] }}</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty"><div class="empty__icon">✉</div><p>Отправок пока нет.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Контент · Маркетинг{% endblock %}
+{% block nav_dept %}is-active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Контент</h1>
+  <p class="muted">Посты и статьи от SMM и SEO. Ниже — заголовок и полный текст каждой публикации.</p>
+</div>
+
+{% include "department/_nav.html" %}
+
+<section class="card">
+  {% if posts %}
+  {% for p in posts %}
+  <article class="content-card">
+    <header class="content-card__head">
+      <span class="content-card__platform">{{ label_platform(p.platform) }}</span>
+      <span class="pill pill--{{ p.status.value }}">{{ label_content_status(p.status.value) }}</span>
+      <span class="muted content-card__date">{{ p.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+    </header>
+    {% if p.title %}
+    <h3 class="content-card__title">{{ p.title }}</h3>
+    {% endif %}
+    {% if p.body %}
+    <div class="content-card__body">{{ p.body }}</div>
+    {% elif not p.title %}
+    <p class="muted">Текст поста пока пустой — дождитесь следующего цикла SMM.</p>
+    {% else %}
+    <p class="muted">Только заголовок, без текста — перезапустите задачу SMM или дождитесь Cursor.</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+  {% else %}
+  <p class="muted">Контента пока нет. SMM и SEO создадут его после плана от CMO (через Cursor или локально).</p>
+  {% endif %}
+</section>
+{% endblock %}

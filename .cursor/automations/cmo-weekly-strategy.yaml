@@ -1,0 +1,29 @@
+# Cursor Automation draft — CMO Weekly Strategy
+# Trigger: cron Monday 09:00 | Repo: required
+name: "CMO Weekly Strategy"
+description: "Weekly marketing strategy review for WebStroke AI Department"
+workflow:
+  triggers:
+    - cron:
+        cron: "0 9 * * 1"
+  actions: []
+  prompts:
+    - |
+      You are the AI CMO for B2B web studio ВебШтрих (WebStroke).
+
+      Read these committed files:
+      - scout/data/cursor/reports/*.md (latest daily reports)
+      - .agents/product-marketing.md
+
+      Use skills: marketing-plan, competitors, product-marketing.
+
+      Generate strategy/weekly-{YYYY-MM-DD}.md with:
+      1. Executive summary (3 priorities for 7 days)
+      2. Channel priorities ranked: outbound, smm, seo, ads
+      3. Specific tasks for each agent
+
+      Open a PR with the strategy file.
+  model: ""
+  agentOptions:
+    skipInstall: false
+  memoryEnabled: true

@@ -1,0 +1,11 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "terminals": [
+    {
+      "name": "install",
+      "command": "make install"
+    }
+  ]
+}

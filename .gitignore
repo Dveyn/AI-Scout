@@ -1,0 +1,56 @@
+# Secrets — never commit
+scout/.env
+office/.env
+.env
+.env.*
+!.env.example
+!scout/.env.example
+!office/.env.example
+
+# Local databases & runtime data
+data/
+*.db
+*.db-journal
+scout/data/*
+!scout/data/.gitkeep
+!scout/data/cursor/
+scout/data/cursor/*
+!scout/data/cursor/pending/
+!scout/data/cursor/verdicts/
+!scout/data/cursor/reports/
+!scout/data/cursor/done/
+scout/data/cursor/pending/*
+!scout/data/cursor/pending/.gitkeep
+scout/data/cursor/verdicts/*
+!scout/data/cursor/verdicts/.gitkeep
+scout/data/cursor/reports/*
+!scout/data/cursor/reports/.gitkeep
+scout/data/cursor/done/*
+!scout/data/cursor/done/.gitkeep
+office/data/
+
+# Python
+scout/.venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Node
+office/ui/node_modules/
+node_modules/
+
+# Logs & PM2
+scout/logs/
+office/logs/
+*.log
+
+# OS / IDE
+.DS_Store
+.idea/
+*.swp
+
+# Budget marker
+office/data/.budget_day

@@ -1,0 +1,21 @@
+# Cursor Automation draft — Sales Reply Assist
+# Trigger: webhook from Scout (CURSOR_WEBHOOK_SALES_REPLY)
+name: "Sales Reply Assist"
+description: "Generate sales reply drafts for inbound lead emails"
+workflow:
+  triggers:
+    - webhook: {}
+  actions: []
+  prompts:
+    - |
+      Scout received an inbound reply. Read scout/data/cursor/pending/sales-reply-*.json.
+
+      Use cold-email, sales-enablement, prospecting skills.
+      Reference .agents/product-marketing.md.
+
+      Generate polished reply (subject + message) and save to scout/data/cursor/done/sales-reply-{deal_id}.json:
+      {"subject": "...", "message": "...", "deal_status": "in_progress"}
+  model: ""
+  agentOptions:
+    skipInstall: false
+  memoryEnabled: true

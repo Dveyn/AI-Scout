@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Маркетинговый отдел · {{ company_brand }}{% endblock %}
+{% block nav_dept %}is-active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Маркетинговый отдел</h1>
+  <p class="muted">{{ mode_label }}</p>
+</div>
+
+{% include "department/_nav.html" %}
+
+<div class="stats">
+  <div class="stat stat--accent">
+    <div class="stat__value">{{ stats.deals.get('new', 0) + stats.deals.get('in_progress', 0) }}</div>
+    <div class="stat__label">Сделки в работе</div>
+  </div>
+  <div class="stat stat--success">
+    <div class="stat__value">{{ stats.deals.get('won', 0) }}</div>
+    <div class="stat__label">Успешно закрыто</div>
+  </div>
+  <div class="stat">
+    <div class="stat__value">{{ stats.tasks_active }}</div>
+    <div class="stat__label">Активные задачи</div>
+  </div>
+  <div class="stat">
+    <div class="stat__value">{{ stats.pending_ads }}</div>
+    <div class="stat__label">Реклама на проверке</div>
+  </div>
+  <div class="stat">
+    <div class="stat__value">{{ stats.pending_cmo }}</div>
+    <div class="stat__label">Ждут утверждения</div>
+  </div>
+</div>
+
+{% if report %}
+<section class="card">
+  <h2 class="card__title">Отчёт аналитики за {{ report.report_date }}</h2>
+  <p>{{ report.summary }}</p>
+  <div class="stats" style="margin-top:1rem">
+    <div class="stat">
+      <div class="stat__value">{{ report.kpi.targets }}</div>
+      <div class="stat__label">Целевые лиды</div>
+    </div>
+    <div class="stat">
+      <div class="stat__value">{{ "%.1f"|format(report.kpi.conversion_rate * 100) }}%</div>
+      <div class="stat__label">Конверсия в сделку</div>
+    </div>
+    <div class="stat">
+      <div class="stat__value">{{ "%.0f"|format(report.kpi.cpl) }}</div>
+      <div class="stat__label">Цена лида, ₽</div>
+    </div>
+    <div class="stat">
+      <div class="stat__value">{{ "%.2f"|format(report.kpi.romi) }}</div>
+      <div class="stat__label">ROMI</div>
+    </div>
+    <div class="stat">
+      <div class="stat__value">{{ "%.0f"|format(report.kpi.llm_cost_rub) }}</div>
+      <div class="stat__label">Расход GPTunnel, ₽</div>
+    </div>
+  </div>
+  {% if report.recommendations %}
+  <h3 class="card__subtitle">Что улучшить</h3>
+  <ul class="list-plain">
+    {% for rec in report.recommendations %}
+    <li>{{ rec }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% else %}
+<section class="card card--hint">
+  <p>Отчёт появится после первого автоматического цикла. Планировщик запускает отдел сам — вручную ничего нажимать не нужно.</p>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2 class="card__title">Последние задачи агентов</h2>
+  {% if tasks %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Кто</th>
+          <th>Что сделать</th>
+          <th>Статус</th>
+          <th>Описание</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tasks[:10] %}
+        <tr>
+          <td>{{ label_agent(t.agent.value) }}</td>
+          <td>{{ label_task_type(t.task_type) }}</td>
+          <td><span class="pill pill--{{ t.status.value }}">{{ label_task_status(t.status.value) }}</span></td>
+          <td class="muted">{{ t.brief[:200] }}{% if t.brief|length > 200 %}…{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">Задач пока нет — CMO поставит их после анализа воронки.</p>
+  {% endif %}
+</section>
+{% endblock %}

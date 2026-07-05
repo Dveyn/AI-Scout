@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block nav_new %}is-active{% endblock %}
+
+{% block content %}
+{% if not job %}
+<div class="page-head">
+  <h1>Новая кампания</h1>
+  <p>Соберём компании с карт (Яндекс или 2GIS), найдём контакты и подготовим персональные письма.</p>
+</div>
+
+<form id="campaign-form" class="card card--pad-lg" onsubmit="return submitCampaign(event)">
+  {% if defaults.presets %}
+  <div class="field">
+    <span class="field__label">Пресет кампании</span>
+    <select name="preset" id="f-preset" onchange="applyPreset(this.value)">
+      {% for p in defaults.presets %}
+      <option value="{{ p.name }}" data-json='{{ p|tojson }}' {% if p.name == defaults.default_preset %}selected{% endif %}>{{ p.label }}</option>
+      {% endfor %}
+    </select>
+    <span class="field__hint">Подставит кому пишем, оффер, запрос и сценарий письма под нишу</span>
+  </div>
+  {% endif %}
+
+  <div class="grid-2">
+    <div class="field">
+      <span class="field__label">Поисковый запрос</span>
+      <input type="text" name="query" id="f-query" required placeholder="производство, оптовая компания…">
+      <span class="field__hint">Что ищем на Яндекс.Картах</span>
+    </div>
+    <div class="field">
+      <span class="field__label">Город</span>
+      <input type="text" name="city" id="f-city" required value="{{ defaults.city }}">
+    </div>
+  </div>
+
+  {% if defaults.queries %}
+  <div class="field">
+    <span class="field__label">Быстрый старт</span>
+    <div class="chips">
+      {% for q in defaults.queries %}
+      <button type="button" class="chip" onclick="fillQuery('{{ q.query }}', '{{ q.city }}')">{{ q.query }} · {{ q.city }}</button>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="field">
+    <span class="field__label">Что предлагаем (войдёт в письмо)</span>
+    <textarea name="offer" rows="2">{{ defaults.offer }}</textarea>
+  </div>
+
+  <details class="field">
+    <summary class="field__label" style="cursor:pointer">Расширенные настройки</summary>
+    <div style="margin-top:0.75rem">
+      <div class="field">
+        <span class="field__label">ICP — кому пишем</span>
+        <textarea name="icp" rows="3">{{ defaults.icp }}</textarea>
+      </div>
+      <div class="field">
+        <span class="field__label">Продукт / услуга</span>
+        <input type="text" name="product" value="{{ defaults.product }}">
+      </div>
+    </div>
+  </details>
+
+  <div class="grid-2">
+    <div class="field">
+      <span class="field__label">Сколько компаний</span>
+      <select name="limit">
+        <option value="10">10 — быстрый тест</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+      </select>
+    </div>
+    <div class="field">
+      <span class="field__label">Тон сообщений</span>
+      <select name="tone">
+        <option value="business">Деловой</option>
+        <option value="friendly">Дружелюбный</option>
+      </select>
+    </div>
+  </div>
+
+  <label class="checkbox" style="margin-bottom:1.25rem">
+    <input type="checkbox" name="auto_send" value="true">
+    <span>
+      Отправить email сразу после обработки
+      <small>Только email-каналы. Мессенджеры всегда вручную по кнопкам. Нужен SMTP в .env</small>
+    </span>
+  </label>
+
+  <input type="hidden" name="agent_skill" id="f-skill" value="outreach-writer">
+  <input type="hidden" name="generate_followups" id="f-followups" value="true">
+
+  <button type="submit" class="btn btn--primary btn--lg btn--block">Запустить кампанию</button>
+</form>
+{% else %}
+<div id="job-panel"
+     {% if job.status.value not in ['done', 'failed'] %}
+     hx-get="/jobs/{{ job.id }}/fragment"
+     hx-trigger="every 3s"
+     hx-swap="outerHTML"
+     {% endif %}>
+  {% include "partials/job_status.html" %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function fillQuery(query, city) {
+    document.getElementById('f-query').value = query;
+    if (city) document.getElementById('f-city').value = city;
+    document.getElementById('f-query').focus();
+  }
+
+  function applyPreset(name) {
+    const sel = document.getElementById('f-preset');
+    const opt = sel?.selectedOptions?.[0];
+    if (!opt) return;
+    try {
+      const p = JSON.parse(opt.getAttribute('data-json'));
+      if (p.query) document.getElementById('f-query').value = p.query;
+      if (p.city) document.getElementById('f-city').value = p.city;
+      const offer = document.querySelector('textarea[name="offer"]');
+      if (offer && p.offer) offer.value = p.offer;
+      const icp = document.querySelector('textarea[name="icp"]');
+      if (icp && p.icp) icp.value = p.icp;
+      const product = document.querySelector('input[name="product"]');
+      if (product && p.product) product.value = p.product;
+      const skill = document.getElementById('f-skill');
+      if (skill && p.skill) skill.value = p.skill;
+    } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('f-preset');
+    if (sel) applyPreset(sel.value);
+  });
+
+  async function submitCampaign(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn.disabled) return false;
+    btn.disabled = true;
+    btn.textContent = 'Запускаем…';
+    const data = Object.fromEntries(new FormData(form));
+    data.limit = parseInt(data.limit, 10);
+    data.auto_send = form.auto_send?.checked || false;
+    data.generate_followups = data.generate_followups !== 'false';
+    try {
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail ? JSON.stringify(err.detail) : 'Ошибка запуска');
+        btn.disabled = false;
+        btn.textContent = 'Запустить кампанию';
+        return false;
+      }
+      const job = await res.json();
+      window.location.href = '/jobs/' + job.id;
+    } catch (err) {
+      showToast('Ошибка сети: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Запустить кампанию';
+    }
+    return false;
+  }
+</script>
+{% endblock %}

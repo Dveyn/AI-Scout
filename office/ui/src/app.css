@@ -1,0 +1,187 @@
+:root {
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface2: #243044;
+  --border: #2d3a4f;
+  --text: #e8edf4;
+  --muted: #8b9cb3;
+  --accent: #3b82f6;
+  --success: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { min-height: 100vh; }
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+button.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+input, select, textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+textarea { min-height: 80px; resize: vertical; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1rem;
+}
+
+.sidebar h1 {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.sidebar .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+
+.scout-link {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+  margin-bottom: 1rem;
+}
+.scout-link:hover { text-decoration: underline; }
+
+.muted { color: var(--muted); }
+
+.nav button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 0.35rem;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.nav button.active {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.main { padding: 1.5rem 2rem; overflow: auto; }
+
+.page-title { font-size: 1.5rem; margin-bottom: 1rem; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.stat .val { font-size: 1.4rem; font-weight: 700; }
+.stat .lbl { color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.card h2 { font-size: 1rem; margin-bottom: 0.75rem; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.idle { background: #334155; color: #cbd5e1; }
+.badge.working { background: #1e3a5f; color: #93c5fd; }
+.badge.waiting_approval { background: #422006; color: #fcd34d; }
+.badge.blocked { background: #450a0a; color: #fca5a5; }
+.badge.done { background: #14532d; color: #86efac; }
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.agent-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.agent-card .role { font-weight: 600; }
+.agent-card .dept { color: var(--muted); font-size: 0.8rem; }
+
+.form-row { margin-bottom: 0.75rem; }
+.form-row label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+
+.list { list-style: none; }
+.list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.toast {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  z-index: 100;
+}

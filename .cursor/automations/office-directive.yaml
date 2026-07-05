@@ -1,0 +1,43 @@
+# Cursor Automation — CEO task → COO → departments → deliverable
+# Trigger: webhook CURSOR_WEBHOOK_OFFICE_DIRECTIVE (or reuse DEPARTMENT_DAILY)
+name: "Office CEO Task"
+description: "Одна задача CEO → COO раздаёт отделам → готовый результат в verdicts/"
+workflow:
+  triggers:
+    - webhook: {}
+  actions: []
+  prompts:
+    - |
+      CEO поставил задачу через AI Office (локально).
+
+      1. Найди последний файл scout/data/cursor/pending/office-directive-*.json
+      2. Прочитай .agents/product-marketing.md
+      3. Skills: planning-and-task-breakdown, marketing-plan, prospecting, sales-enablement
+
+      Ты — COO веб-студии ВебШтрих:
+      - Разбей задачу CEO на 2–4 поручения отделам (marketing, sales, leadgen, production)
+      - Для каждого отдела укажи сроки (start_at, deadline) и ВЫПОЛНИ работу (не «планируем», а готовые тексты/списки/КП)
+      - Собери один готовый результат для CEO
+
+      Запиши JSON в scout/data/cursor/verdicts/office-directive-{directive_id}.json
+      (directive_id из pending-файла):
+
+      {
+        "type": "office_directive",
+        "directive_id": "...",
+        "status": "completed",
+        "coo_plan": "как координировал",
+        "schedule": [
+          {"department":"marketing","brief":"...","start_at":"ДД.ММ ЧЧ:ММ","deadline":"...","order":1}
+        ],
+        "dept_results": [
+          {"department":"marketing","department_label":"Маркетинг","summary":"что сделано"}
+        ],
+        "final_report": "# Готовый результат\\n\\n(то, что CEO может сразу использовать)"
+      }
+
+      Не используй GPTunnel. Не выдумывай факты о клиентах.
+  model: ""
+  agentOptions:
+    skipInstall: false
+  memoryEnabled: true

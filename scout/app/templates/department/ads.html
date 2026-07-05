@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Реклама · Маркетинг{% endblock %}
+{% block nav_dept %}is-active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Реклама</h1>
+  <p class="muted">Объявления для Директа и VK Ads. Перед запуском нужно ваше утверждение — деньги не тратятся сами.</p>
+</div>
+
+{% include "department/_nav.html" %}
+
+<section class="card">
+  {% if creatives %}
+  {% for c in creatives %}
+  <article class="approval-card">
+    <header class="approval-card__head">
+      <strong>{{ c.headlines | join(' · ') or 'Без заголовка' }}</strong>
+      <span class="pill pill--{{ c.status.value }}">{{ label_ad_status(c.status.value) }}</span>
+    </header>
+    <p class="muted">Аудитория: {{ c.audience or 'не указана' }}</p>
+    <p class="approval-card__brief">{{ c.body[:400] }}{% if c.body|length > 400 %}…{% endif %}</p>
+    {% if c.ab_hypothesis %}
+    <p class="muted"><em>Гипотеза A/B:</em> {{ c.ab_hypothesis }}</p>
+    {% endif %}
+    {% if c.status.value == 'pending_approval' %}
+    <div class="approval-card__actions">
+      <form method="post" action="/department/ads/{{ c.id }}/approve">
+        <button type="submit" class="btn btn--success">Одобрить к запуску</button>
+      </form>
+      <form method="post" action="/department/ads/{{ c.id }}/reject">
+        <button type="submit" class="btn btn--ghost">Отклонить</button>
+      </form>
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+  {% else %}
+  <p class="muted">Креативов пока нет. Рекламный агент подготовит их по задаче от CMO.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ company_brand }} Scout{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="/">
+        <span class="brand__logo">{{ company_brand[0] }}</span>
+        <span class="brand__name">{{ company_brand }} <em>Scout</em></span>
+      </a>
+      <nav class="nav">
+        <a href="/" class="nav__link {% block nav_new %}{% endblock %}">Новая кампания</a>
+        <a href="/dashboard" class="nav__link {% block nav_dash %}{% endblock %}">Дашборд</a>
+        <a href="/department" class="nav__link {% block nav_dept %}{% endblock %}">Маркетинг</a>
+        <a href="http://127.0.0.1:8090/office" class="nav__link" target="_blank" rel="noopener">AI Офис</a>
+        {% if auth_enabled() %}
+        <a href="/logout" class="nav__link">Выход</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    {% for w in system_warnings() %}
+    <div class="banner-warn" role="status">
+      <strong>{{ w.title }}</strong> — {{ w.text }}
+    </div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

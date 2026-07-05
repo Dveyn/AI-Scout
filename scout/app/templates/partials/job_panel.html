@@ -1,0 +1,8 @@
+<div id="job-panel"
+     {% if polling %}
+     hx-get="/jobs/{{ job.id }}/fragment"
+     hx-trigger="every 3s"
+     hx-swap="outerHTML"
+     {% endif %}>
+  {% include "partials/job_status.html" %}
+</div>

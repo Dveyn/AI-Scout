@@ -1,0 +1,22 @@
+# Cursor Automation draft — Ads Approval Gate
+# Trigger: webhook from Scout (CURSOR_WEBHOOK_ADS_APPROVAL)
+name: "Ads Approval Gate"
+description: "Review ad creatives pending approval from Scout department"
+workflow:
+  triggers:
+    - webhook: {}
+  actions: []
+  prompts:
+    - |
+      Scout exported ad creative for review in scout/data/cursor/pending/ads-*.json.
+
+      Read the latest pending ads JSON file and review creatives using ad-creative and ab-testing skills.
+
+      Write verdict to scout/data/cursor/verdicts/ads-{creative_id}.json:
+      {"type": "ads_approval", "creative_id": "...", "verdict": "approve"|"reject", "notes": "..."}
+
+      Reference .agents/product-marketing.md for tone guardrails.
+  model: ""
+  agentOptions:
+    skipInstall: false
+  memoryEnabled: true

@@ -1,0 +1,34 @@
+# Cursor Automation — Department Daily (webhook from Scout)
+# Trigger: webhook (CURSOR_WEBHOOK_DEPARTMENT_DAILY in scout/.env)
+name: "Department Daily"
+description: "CMO + Analytics + content tasks — runs on Cursor subscription, not GPTunnel"
+workflow:
+  triggers:
+    - webhook: {}
+  actions: []
+  prompts:
+    - |
+      Scout exported a daily cycle handoff. Read the latest file in
+      scout/data/cursor/pending/daily-cycle-*.json and .agents/product-marketing.md.
+
+      Skills: marketing-plan, analytics, content-strategy, copywriting, ai-seo, ad-creative.
+
+      Write results to scout/data/cursor/verdicts/ (committed paths):
+
+      1. analytics-{YYYY-MM-DD}.json
+         {"type":"analytics","report_date":"...","summary":"...","recommendations":["..."]}
+
+      2. cmo-plan-{YYYY-MM-DD}.json
+         {"type":"cmo_plan","strategy_summary":"...","tasks":[{"agent":"smm|seo|ads","task_type":"...","brief":"...","priority":5}]}
+
+      3. content-{platform}-{date}.json (one per post)
+         {"type":"content","platform":"telegram|vk|seo","title":"...","body":"..."}
+
+      4. ad-creative-{date}.json (optional)
+         {"type":"ad_creative","headlines":["..."],"body":"...","audience":"...","ab_hypothesis":"..."}
+
+      Do NOT use GPTunnel. Scout will ingest verdicts on next cycle and publish content.
+  model: ""
+  agentOptions:
+    skipInstall: false
+  memoryEnabled: true

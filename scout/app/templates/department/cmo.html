@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Утверждения · Маркетинг{% endblock %}
+{% block nav_dept %}is-active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Утверждения CMO</h1>
+  <p class="muted">Задачи, которые директор по маркетингу предлагает запустить. Одобрите или отклоните — после этого агенты выполнят работу.</p>
+</div>
+
+{% include "department/_nav.html" %}
+
+<section class="card">
+  {% if tasks %}
+  {% for t in tasks %}
+  <article class="approval-card">
+    <header class="approval-card__head">
+      <strong>{{ label_agent(t.agent.value) }}</strong>
+      <span class="pill pill--pending_cmo_approval">{{ label_task_type(t.task_type) }}</span>
+    </header>
+    <p class="approval-card__brief">{{ t.brief }}</p>
+    <div class="approval-card__actions">
+      <form method="post" action="/department/tasks/{{ t.id }}/approve">
+        <button type="submit" class="btn btn--success">Одобрить</button>
+      </form>
+      <form method="post" action="/department/tasks/{{ t.id }}/reject">
+        <button type="submit" class="btn btn--ghost">Отклонить</button>
+      </form>
+    </div>
+  </article>
+  {% endfor %}
+  {% else %}
+  <p class="muted">Всё чисто — нет задач, ожидающих вашего решения.</p>
+  {% endif %}
+</section>
+{% endblock %}

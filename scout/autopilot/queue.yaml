@@ -1,0 +1,32 @@
+# Очередь кампаний автопилота — крутится по кругу (round-robin).
+# Запуск: make autopilot  |  cron: scout/scripts/cron_daily.sh
+
+defaults:
+  limit: 12
+  auto_send: true
+  generate_followups: true
+
+campaigns:
+  - preset: food-delivery
+    query: доставка еды
+    city: Ростов-на-Дону
+
+  - preset: food-delivery
+    query: суши
+    city: Ростов-на-Дону
+
+  - preset: food-delivery
+    query: пицца
+    city: Ростов-на-Дону
+
+  - preset: food-delivery
+    query: доставка суши
+    city: Краснодар
+
+  - preset: food-delivery
+    query: доставка пиццы
+    city: Краснодар
+
+  - preset: food-delivery
+    query: wok
+    city: Ростов-на-Дону
