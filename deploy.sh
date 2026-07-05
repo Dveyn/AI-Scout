@@ -8,6 +8,7 @@
 #   --skip-pm2       только установка, без PM2
 #   --skip-browser   без Playwright (если не нужны Яндекс.Карты)
 #   --with-cron      добавить cron (будни 10:00) — доп. к планировщику PM2
+#   --with-cursor-sync  cron каждые 5 мин: push handoffs / pull verdicts (Cursor Cloud)
 #
 set -euo pipefail
 
@@ -18,6 +19,7 @@ LOCAL=0
 SKIP_PM2=0
 SKIP_BROWSER=0
 WITH_CRON=0
+WITH_CURSOR_SYNC=0
 
 for arg in "$@"; do
   case "$arg" in
@@ -25,6 +27,7 @@ for arg in "$@"; do
     --skip-pm2) SKIP_PM2=1 ;;
     --skip-browser) SKIP_BROWSER=1 ;;
     --with-cron) WITH_CRON=1 ;;
+    --with-cursor-sync) WITH_CURSOR_SYNC=1 ;;
     -h|--help)
       sed -n '2,12p' "$0"
       exit 0
@@ -78,10 +81,10 @@ fi
 
 # --- Каталоги ---
 log "Каталоги данных"
-mkdir -p scout/logs scout/data
+mkdir -p scout/logs scout/data office/logs office/data
 mkdir -p scout/data/cursor/{pending,reports,done,verdicts}
-chmod +x scout/scripts/*.sh 2>/dev/null || true
-ok "scout/logs, scout/data, cursor handoffs"
+chmod +x scout/scripts/*.sh office/scripts/*.sh scripts/*.sh 2>/dev/null || true
+ok "scout/logs, scout/data, office/, cursor handoffs"
 
 # --- .env ---
 log "Конфиг scout/.env"
@@ -97,7 +100,8 @@ if [[ ! -d scout/.venv ]]; then
 fi
 scout/.venv/bin/pip install -q --upgrade pip
 scout/.venv/bin/pip install -q -r scout/requirements.txt
-ok "venv + requirements.txt"
+scout/.venv/bin/pip install -q -r office/requirements.txt
+ok "venv + scout + office requirements"
 
 # --- Playwright ---
 if [[ "$SKIP_BROWSER" -eq 0 ]]; then
@@ -121,8 +125,21 @@ fi
 
 # --- Проверка старта ---
 log "Проверка импорта"
-PYTHONPATH="$ROOT" scout/.venv/bin/python -c "from scout.app.main import app; print('routes:', len(app.routes))"
+PYTHONPATH="$ROOT" scout/.venv/bin/python -c "from scout.app.main import app; from office.api.main import app as oa; print('scout:', len(app.routes), 'office:', len(oa.routes))"
 ok "Приложение загружается"
+
+# --- Office UI ---
+if command -v npm >/dev/null 2>&1; then
+  log "Office UI (npm build)"
+  (
+    cd office/ui
+    if [[ -f package-lock.json ]]; then npm ci; else npm install; fi
+    npm run build
+  )
+  ok "Office UI → office/ui/dist"
+else
+  warn "npm не найден — Office UI не собран. Ubuntu: Node 20+ → make office-ui"
+fi
 
 # --- PM2 ---
 if [[ "$SKIP_PM2" -eq 0 ]]; then
@@ -139,7 +156,7 @@ if [[ "$SKIP_PM2" -eq 0 ]]; then
 
   if [[ "$SKIP_PM2" -eq 0 ]]; then
     log "PM2: веб-UI + планировщик маркетинга"
-    pm2 delete scout department-scheduler 2>/dev/null || true
+    pm2 delete scout department-scheduler office 2>/dev/null || true
     pm2 start ecosystem.config.cjs
     pm2 save 2>/dev/null || true
     ok "PM2 процессы запущены"
@@ -149,6 +166,24 @@ if [[ "$SKIP_PM2" -eq 0 ]]; then
       echo "       pm2 save"
     fi
   fi
+fi
+
+# --- Cursor git sync (опционально) ---
+if [[ "$WITH_CURSOR_SYNC" -eq 1 ]]; then
+  if grep -q '^CURSOR_GIT_SYNC_ENABLED=' scout/.env 2>/dev/null; then
+    sed -i.bak 's/^CURSOR_GIT_SYNC_ENABLED=.*/CURSOR_GIT_SYNC_ENABLED=true/' scout/.env
+    rm -f scout/.env.bak
+  else
+    echo "CURSOR_GIT_SYNC_ENABLED=true" >> scout/.env
+  fi
+  SYNC_LINE="*/5 * * * * cd $ROOT && scripts/cursor_git_sync.sh >> scout/logs/cursor-sync.log 2>&1"
+  if crontab -l 2>/dev/null | grep -Fq "cursor_git_sync.sh"; then
+    ok "Cursor git sync cron уже настроен"
+  else
+    (crontab -l 2>/dev/null; echo "$SYNC_LINE") | crontab -
+    ok "Cron: каждые 5 мин → cursor handoffs ↔ GitHub"
+  fi
+  warn "Настройте git push с сервера (deploy key): docs/CICD.md"
 fi
 
 # --- Cron (опционально) ---
@@ -204,6 +239,9 @@ else
   echo "  UI:        http://${HOST}:${PORT}"
 fi
 echo "  Маркетинг: http://${HOST}:${PORT}/department"
+OFFICE_PORT="$(read_env OFFICE_BIND_PORT 8090)"
+OFFICE_HOST="$(read_env OFFICE_BIND_HOST 127.0.0.1)"
+echo "  AI Office: http://${OFFICE_HOST}:${OFFICE_PORT}/office"
 if [[ -n "$PASS" ]]; then
   echo "  Логин:     ${USER_NAME}"
   echo "  Пароль:    ${PASS}"

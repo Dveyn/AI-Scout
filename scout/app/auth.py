@@ -20,7 +20,7 @@ def auth_enabled(settings: Settings | None = None) -> bool:
 
 
 def is_public_path(path: str) -> bool:
-    return path == "/login" or path.startswith("/static/")
+    return path in ("/login", "/health") or path.startswith("/static/")
 
 
 def verify_credentials(username: str, password: str, settings: Settings | None = None) -> bool:

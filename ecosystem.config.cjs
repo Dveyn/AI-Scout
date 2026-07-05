@@ -37,10 +37,9 @@ module.exports = {
     },
     {
       name: "office",
-      script: "scout/.venv/bin/uvicorn",
-      args: "office.api.main:app --host 127.0.0.1 --port 8090",
+      script: "office/scripts/run_production.sh",
+      interpreter: "bash",
       cwd: __dirname,
-      env: { PYTHONPATH: __dirname },
       instances: 1,
       autorestart: true,
       max_restarts: 10,

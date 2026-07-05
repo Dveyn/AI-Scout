@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            scout/requirements.txt
+            office/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv scout/.venv
+          scout/.venv/bin/pip install -q --upgrade pip
+          scout/.venv/bin/pip install -q -r scout/requirements.txt
+          scout/.venv/bin/pip install -q -r office/requirements.txt
+
+      - name: Import check (Scout + Office)
+        run: |
+          PYTHONPATH=. scout/.venv/bin/python -c "
+          from scout.app.main import app as scout_app
+          from office.api.main import app as office_app
+          print('scout routes:', len(scout_app.routes))
+          print('office routes:', len(office_app.routes))
+          "
+
+      - name: Bootstrap env (CI)
+        run: python scout/scripts/bootstrap_env.py --local
+
+      - name: Office storage init
+        run: |
+          PYTHONPATH=. scout/.venv/bin/python -c "
+          import asyncio
+          from office.storage import init_db
+          asyncio.run(init_db())
+          print('office db ok')
+          "
+
+  office-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: office/ui/package-lock.json
+
+      - name: Build Office UI
+        working-directory: office/ui
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm run build
+
+      - name: Verify dist
+        run: test -f office/ui/dist/index.html

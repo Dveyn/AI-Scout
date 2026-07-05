@@ -1,11 +1,11 @@
-.PHONY: install deploy run cli blast send followup presets dashboard pm2 reset autopilot autopilot-daily followups-due inbox department-daily department-scheduler department-scheduler-stop local-dev office-install office-ui office-run office-dev office-task office-ingest office-result
+.PHONY: install deploy run cli blast send followup presets dashboard pm2 reset autopilot autopilot-daily followups-due inbox department-daily department-scheduler department-scheduler-stop local-dev office-install office-ui office-run office-dev office-task office-ingest office-result server-update cursor-sync
 
 install:
 	cd scout && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 	cd scout && .venv/bin/pip install -r ../office/requirements.txt
 	cd scout && .venv/bin/playwright install chromium
 	python3 scout/scripts/bootstrap_env.py --local
-	chmod +x scout/scripts/run_production.sh scout/scripts/local_department_scheduler.sh scout/scripts/cron_daily.sh deploy.sh
+	chmod +x scout/scripts/run_production.sh scout/scripts/local_department_scheduler.sh scout/scripts/cron_daily.sh office/scripts/run_production.sh deploy.sh scripts/server_update.sh scripts/cursor_git_sync.sh
 	mkdir -p scout/logs scout/data scout/data/cursor/{pending,reports,done,verdicts}
 	mkdir -p office/data office/ui/dist
 
@@ -116,3 +116,11 @@ office-ingest:
 office-result:
 	@test -n "$(ID)" || (echo 'Usage: make office-result ID=<directive-id>' && exit 1)
 	PYTHONPATH=. scout/.venv/bin/python scout/scripts/office_cli.py ingest --id $(ID)
+
+server-update:
+	chmod +x scripts/server_update.sh scripts/cursor_git_sync.sh
+	./scripts/server_update.sh
+
+cursor-sync:
+	chmod +x scripts/cursor_git_sync.sh
+	./scripts/cursor_git_sync.sh

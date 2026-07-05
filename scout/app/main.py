@@ -145,6 +145,11 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=str(APP_DIR / "static")), name="static")
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok", "service": "scout"}
+
+
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, error: str | None = None):
     if request.session.get(SESSION_KEY):

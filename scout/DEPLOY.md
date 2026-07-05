@@ -115,8 +115,11 @@ sudo ufw enable
 cd /opt/scout-app
 git pull
 make install   # если менялись зависимости
-pm2 restart scout
+make office-ui # если менялся Office UI
+pm2 restart all
 ```
+
+**Автоматически:** push в `main` → GitHub Actions деплой. См. [docs/CICD.md](../docs/CICD.md).
 
 ## 7. CLI на сервере
 
